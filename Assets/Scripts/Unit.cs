@@ -140,4 +140,9 @@ public class Unit : MonoBehaviour
             transform.position = destTile.transform.position;
         }
     }
+
+    public Queue<ActionType> GetActionQueue()
+    {
+        return actionQueue;
+    }
 }

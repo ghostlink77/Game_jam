@@ -74,6 +74,8 @@ public class ActionManager : MonoBehaviour
             Destroy(icon);
         }
         actionIcons.Clear();
+        UIManager.HideUnitInfo();
+        UIManager.HideUnitActionOption();
     }
     void Update()
     {
@@ -97,7 +99,8 @@ public class ActionManager : MonoBehaviour
                 if (selectedUnit != null)
                 {
                     currentUnit = selectedUnit;
-                    Debug.Log("Selected unit: " + currentUnit.unitName);
+                    UIManager.ShowUnitInfo(currentUnit);
+                    UIManager.ShowUnitActionOption();
                 }
             }
         }
@@ -126,11 +129,27 @@ public class ActionManager : MonoBehaviour
         {
             SelectMoveTile();
         }
+
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            EnterWait();
+        }
+    }
+
+    public void EnterWait()
+    {
+        if(currentUnit == null)
+        {
+            return;
+        }
+        currentUnit.EnQueueAction(ActionType.WAIT);
+        UIManager.HideUnitActionOption();
     }
 
     // Move Mode: m키 누를 시 이동 가능한 타일 하이라이트
-    private void EnterMoveMode()
+    public void EnterMoveMode()
     {
+        UIManager.HideUnitActionOption();
         Debug.Log("Enter Move Mode");
         isMoveMode = true;
         Tile currentTile = currentUnit.GetCurrentTile();

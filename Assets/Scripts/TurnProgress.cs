@@ -11,15 +11,26 @@ public class TurnProgress : MonoBehaviour
 
     private List<Unit> allUnits;
 
+    private List<Unit> EnemyUnits;
+
     private int currentTime;
     private int turnDuration = 10;
+
+    private int enemysActionPoint = 10;
 
     public void StartPhase()
     {
         allUnits = new List<Unit>(FindObjectsByType<Unit>(FindObjectsSortMode.None));
+        GameObject[] playerUnit = GameObject.FindGameObjectsWithTag("EnemyUnit");
+        foreach (GameObject unitObj in playerUnit)
+        {
+            Unit unit = unitObj.GetComponent<Unit>();
+            EnemyUnits.Add(unit);
+        }
         DecideEnemysAction();
         currentTime = 0;
         StartCoroutine(ProgressTurn());
+        UIManager.HideUnitInfo();
     }
 
     // Update is called once per frame
@@ -62,6 +73,7 @@ public class TurnProgress : MonoBehaviour
 
     private void DecideEnemysAction()
     {
+        enemysActionPoint = 10;
 
     }
 }

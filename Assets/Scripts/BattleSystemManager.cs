@@ -48,7 +48,7 @@ public class BattleSystemManager : MonoBehaviour
     IEnumerator BattleStart()
     {
         SpawnUnits(playerUnitPrefabs, playerUnitSpawnPoints);
-        //SpawnUnits(enemyUnitPrefabs, enemyUnitSpawnPoints);
+        SpawnUnits(enemyUnitPrefabs, enemyUnitSpawnPoints);
 
         yield return new WaitForSeconds(1f);
         currentState = BattleState.THINKING;
