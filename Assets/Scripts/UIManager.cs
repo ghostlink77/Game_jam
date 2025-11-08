@@ -22,6 +22,9 @@ public class UIManager : MonoBehaviour
     [Header("Unit Action UI")]
     [SerializeField] private GameObject unitActionPanel;
 
+    [Header("Result Text")]
+    [SerializeField] private TextMeshProUGUI resultText;
+
     public void UpdateActionPoints(int currentPoints, int maxPoints)
     {
         actionPointSlider.maxValue = maxPoints;
@@ -59,5 +62,16 @@ public class UIManager : MonoBehaviour
     public void HideUnitActionOption()
     {
         unitActionPanel.SetActive(false);
+    }
+
+    public void Win()
+    {
+        resultText.gameObject.SetActive(true);
+        resultText.text = "YOU WIN!!";
+    }
+    public void Lose()
+    {
+        resultText.gameObject.SetActive(true);
+        resultText.text = "YOU LOSE..";
     }
 }

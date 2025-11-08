@@ -14,6 +14,22 @@ public enum BattleState
 
 public class BattleSystemManager : MonoBehaviour
 {
+    public static BattleSystemManager instance;
+    public static BattleSystemManager Instance { get; private set; }
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+
     [SerializeField] private List<GameObject> playerUnitPrefabs;
     [SerializeField] private List<GameObject> enemyUnitPrefabs;
     [SerializeField] private List<Transform> playerUnitSpawnPoints;
@@ -21,6 +37,10 @@ public class BattleSystemManager : MonoBehaviour
 
     [SerializeField] private ActionManager actionManager;
     [SerializeField] private TurnProgress turnProgress;
+    [SerializeField] private UIManager UIManager;
+
+    private List<Unit> playerUnits;
+    private List<Unit> enemyUnits;
 
     private BattleState currentState;
     public BattleState CurrentState { get { return currentState; } }
@@ -34,21 +54,26 @@ public class BattleSystemManager : MonoBehaviour
         StartCoroutine(BattleStart());
     }
 
-    private void SpawnUnits(List<GameObject> unitPrefabs, List<Transform> spawnPoints)
+    private List<Unit> SpawnUnits(List<GameObject> unitPrefabs, List<Transform> spawnPoints)
     {
-        for(int i = 0; i < unitPrefabs.Count; i++)
+        List<Unit> spawnedUnits = new List<Unit>();
+        for (int i = 0; i < unitPrefabs.Count; i++)
         {
             Vector3 spawnPosition = spawnPoints[i].position;
             GameObject unitObject = Instantiate(unitPrefabs[i], spawnPosition, Quaternion.identity);
             Unit unit = unitObject.GetComponent<Unit>();
             unit.unitName = unitPrefabs[i].name + i.ToString();
+
+            spawnedUnits.Add(unit);
         }
+
+        return spawnedUnits;
     }
 
     IEnumerator BattleStart()
     {
-        SpawnUnits(playerUnitPrefabs, playerUnitSpawnPoints);
-        SpawnUnits(enemyUnitPrefabs, enemyUnitSpawnPoints);
+        playerUnits = SpawnUnits(playerUnitPrefabs, playerUnitSpawnPoints);
+        enemyUnits = SpawnUnits(enemyUnitPrefabs, enemyUnitSpawnPoints);
 
         yield return new WaitForSeconds(1f);
         currentState = BattleState.THINKING;
@@ -71,9 +96,44 @@ public class BattleSystemManager : MonoBehaviour
     }
     public void OnTurnEnd()
     {
-        StopCoroutine(turnProgress.ProgressTurn());
+        turnProgress.EndPhase();
+
+        if(JudgeWin())
+        {
+            currentState = BattleState.WON;
+            Debug.Log("All enemies defeated! You won the battle!");
+            UIManager.Win();
+            return;
+        }
+        if(JudgeLose())
+        {
+            currentState = BattleState.LOST;
+            Debug.Log("All player units defeated! You lost the battle!");
+            UIManager.Lose();
+            return;
+        }
+
         currentState = BattleState.THINKING;
         actionManager.StartPhase();
         Debug.Log("Turn ended! State changed to THINKING.");
+    }
+
+    private bool JudgeWin()
+    {
+        foreach(Unit enemy in enemyUnits)
+        {
+            if(enemy.IsAlive)
+                return false;
+        }
+        return true;
+    }
+    private bool JudgeLose()
+    {
+        foreach(Unit player in playerUnits)
+        {
+            if(player.IsAlive)
+                return false;
+        }
+        return true;
     }
 }

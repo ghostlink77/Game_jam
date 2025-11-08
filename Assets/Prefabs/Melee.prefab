@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 385245573788504751}
   - component: {fileID: 4533803967477895735}
-  - component: {fileID: 9009624893333276015}
   - component: {fileID: -8444355387473246615}
+  - component: {fileID: 1513593990963074537}
   m_Layer: 7
   m_Name: Melee
   m_TagString: PlayerUnit
@@ -89,20 +89,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &9009624893333276015
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5686744868001241726}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66b8aa06ec989164b98e099eadcc5998, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  unitName: Melee
-  health: 3
 --- !u!65 &-8444355387473246615
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -124,3 +110,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 0.2}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1513593990963074537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5686744868001241726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95ee40f1f9a813946922d2ed8dabce91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  unitName: Melee
+  MaxHp: 3
+  attackRangeIndicatorPrefab: {fileID: 6434198280659719018, guid: 98dcd92a184364d47a359a0c646403f2, type: 3}

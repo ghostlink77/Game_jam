@@ -6,37 +6,56 @@ using UnityEngine.Rendering;
 
 public class TurnProgress : MonoBehaviour
 {
-    [SerializeField] private BattleSystemManager battleSystemManager;
     [SerializeField] private UIManager UIManager;
 
     private List<Unit> allUnits;
-
-    private List<Unit> EnemyUnits;
+    private List<EnemyUnit> enemyUnits;
+    private List<PlayerUnit> playerUnits;
 
     private int currentTime;
     private int turnDuration = 10;
 
-    private int enemysActionPoint = 10;
+    private int enemysActionPoint = 12;
 
     public void StartPhase()
     {
+        enemyUnits = new List<EnemyUnit>();
+        playerUnits = new List<PlayerUnit>();
         allUnits = new List<Unit>(FindObjectsByType<Unit>(FindObjectsSortMode.None));
-        GameObject[] playerUnit = GameObject.FindGameObjectsWithTag("EnemyUnit");
-        foreach (GameObject unitObj in playerUnit)
+        foreach (Unit unit in allUnits)
         {
-            Unit unit = unitObj.GetComponent<Unit>();
-            EnemyUnits.Add(unit);
+            if (unit is EnemyUnit)
+            {
+                enemyUnits.Add((EnemyUnit)unit);
+            }
+            else if (unit is PlayerUnit)
+            {
+                playerUnits.Add((PlayerUnit)unit);
+            }
         }
+
+        foreach (PlayerUnit unit in playerUnits)
+        {
+            unit.HideAllAttackIndicators();
+        }
+
         DecideEnemysAction();
         currentTime = 0;
         StartCoroutine(ProgressTurn());
         UIManager.HideUnitInfo();
     }
+    public void EndPhase()
+    {
+        StopAllCoroutines();
+        foreach(Unit unit in allUnits)
+        {
+            unit.ClearAction();
+        }
+    }
 
-    // Update is called once per frame
     void Update()
     {
-        if (battleSystemManager.CurrentState != BattleState.PROGRESS) return;
+        //if (battleSystemManager.CurrentState != BattleState.PROGRESS) return;
 
 
     }
@@ -57,7 +76,7 @@ public class TurnProgress : MonoBehaviour
 
             yield return new WaitForSeconds(1f);
         }
-        battleSystemManager.OnTurnEnd();
+        BattleSystemManager.Instance.OnTurnEnd();
     }
 
     private void DoAllUnitsAction()
@@ -71,9 +90,66 @@ public class TurnProgress : MonoBehaviour
         }
     }
 
+    // 적 유닛들의 행동 결정
     private void DecideEnemysAction()
     {
-        enemysActionPoint = 10;
+        int currentEnemysActionPoint = enemysActionPoint;
 
+        List<EnemyUnit> aliveEnemies = enemyUnits.FindAll(e => e.IsAlive);
+        List<PlayerUnit> alivePlayers = playerUnits.FindAll(p => p.IsAlive);
+
+        foreach(EnemyUnit enemy in aliveEnemies)
+        {
+            // 타겟 플레이어 유닛 선정 (50% 확률로 가장 가까운 유닛, 50% 확률로 랜덤 유닛)
+            PlayerUnit targetPlayer = null;
+            if (Random.Range(0f, 1f) < 0.5f)
+            {
+                targetPlayer = FindClosestPlayerUnit(alivePlayers, enemy);
+            }
+            else
+            {
+                targetPlayer = alivePlayers[Random.Range(0, alivePlayers.Count)];
+            }
+            enemy.SetTargetPlayerUnit(targetPlayer);
+
+            // 액션 포인트 할당
+            int maxPointsForThisEnemy = Mathf.Min(5, currentEnemysActionPoint);
+            int points = Random.Range(0, maxPointsForThisEnemy + 1);
+
+            enemy.DecideAction(points);
+
+            currentEnemysActionPoint -= points;
+            if (currentEnemysActionPoint <= 0) break;
+
+            ShuffleEnemyList(aliveEnemies);
+        }
+    }
+
+    private PlayerUnit FindClosestPlayerUnit(List<PlayerUnit> alivePlayers, EnemyUnit enemy)
+    {
+        PlayerUnit closestPlayer = null;
+        float closestDistance = Mathf.Infinity;
+        foreach (PlayerUnit player in alivePlayers)
+        {
+            float distance = Vector3.Distance(enemy.transform.position, player.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestPlayer = player;
+            }
+        }
+        return closestPlayer;
+    }
+
+    private void ShuffleEnemyList(List<EnemyUnit> list)
+    {
+        int n = list.Count;
+        for (int i = 0; i < n; i++)
+        {
+            int r = i + Random.Range(0, n - i);
+            var temp = list[r];
+            list[r] = list[i];
+            list[i] = temp;
+        }
     }
 }

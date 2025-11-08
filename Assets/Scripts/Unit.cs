@@ -16,36 +16,50 @@ public enum ActionType
 public class Unit : MonoBehaviour
 {
     public string unitName;
-    public int health;
+    [SerializeField] private int MaxHp = 3;
+    [SerializeField] private int attackTime = 1;
+    private int hp;
+    public int Hp
+    {
+        get { return hp; }
+        set { if(value >= 0 && value <= MaxHp) hp = value; }
+    }
+
+    private bool isAlive = true;
+    public bool IsAlive { get { return isAlive; } }
 
     private Vector3 initialPosition;
 
     private Queue<ActionType> actionQueue;
+    
 
-    private void Start()
+    protected virtual void Start()
     {
         actionQueue = new Queue<ActionType>(10);
+        Hp = MaxHp;
     }
     public void TakeDamage()
     {
-        health--;
-        if(health <= 0)
+        hp--;
+        if(hp <= 0)
         {
             Die();
         }
         else
         {
-            Debug.Log(unitName + " took damage! Remaining health: " + health);
+            Debug.Log(unitName + " took damage! Remaining health: " + hp);
         }
     }
 
     private void Die()
     {
-        Destroy(gameObject);
+        ClearAction();
+        isAlive = false;
+        gameObject.SetActive(false);
     }
 
 
-    public void InitializeTransform()
+    public void InitializePosition()
     {
         initialPosition = transform.position;
     }
@@ -83,7 +97,7 @@ public class Unit : MonoBehaviour
         switch (action)
         {
             case ActionType.ATTACK:
-                Debug.Log(unitName + " performs ATTACK action.");
+                PerformAttack(attackTime);
                 break;
             case ActionType.MOVEUP:
             case ActionType.MOVERIGHT:
@@ -110,9 +124,14 @@ public class Unit : MonoBehaviour
         Debug.Log(unitName + " dequeued action: " + action.ToString());
         DoAction(action);
     }
-    public void ClearAction()
+    public virtual void ClearAction()
     {
         actionQueue.Clear();
+    }
+
+    protected virtual void PerformAttack(int time)
+    {
+        Debug.Log(unitName + " performs an attack!");
     }
     private void Move(ActionType action)
     {

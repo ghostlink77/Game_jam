@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class ActionManager : MonoBehaviour
 {
-    [SerializeField] private BattleSystemManager battleSystemManager;
     [SerializeField] private UIManager UIManager;
 
     [SerializeField] private LayerMask playerUnitLayer; // 플레이어 유닛 레이어: 유닛 선택용
@@ -14,10 +13,11 @@ public class ActionManager : MonoBehaviour
     [SerializeField] private GameObject moveIconPrefab;
     [SerializeField] private GameObject attackIconPrefab;
 
-    private List<GameObject> actionIcons;
+    private List<GameObject> actionIcons;               // 행동 초기화/Progress로 넘길 때 제거하기 위해
 
-    private int actionCount = 10;
-    private Unit currentUnit;
+    private int currentActionPoint = 10;
+    private int maxActionPoint = 10;
+    private PlayerUnit currentUnit;
 
     private List<Unit> playerUnits;
 
@@ -25,21 +25,22 @@ public class ActionManager : MonoBehaviour
     private bool isMoveMode = false;
     private List<Tile> highlightedTiles = new List<Tile>();
 
+    // 행동: 공격 관련
+    private bool isAttackMode = false;
+    private AttackRangeIndicator currentAttackIndicator;
+
     // 행동 선택 페이즈 시작
     public void StartPhase()
     {
-        playerUnits = new List<Unit>();
+        playerUnits = new List<Unit>(FindObjectsByType<PlayerUnit>(FindObjectsSortMode.None));
         actionIcons = new List<GameObject>();
-        actionCount = 10;
+        currentActionPoint = maxActionPoint;
         currentUnit = null;
-        UIManager.UpdateActionPoints(actionCount, 10);
+        UIManager.UpdateActionPoints(currentActionPoint, maxActionPoint);
 
-        GameObject[] playerUnit = GameObject.FindGameObjectsWithTag("PlayerUnit");
-        foreach(GameObject unitObj in playerUnit)
+        foreach(Unit unit in playerUnits)
         {
-            Unit unit = unitObj.GetComponent<Unit>();
-            playerUnits.Add(unit);
-            unit.InitializeTransform();
+            unit.InitializePosition();
         }
     }
 
@@ -54,8 +55,8 @@ public class ActionManager : MonoBehaviour
 
     public void ResetAction()
     {
-        actionCount = 10;
-        UIManager.UpdateActionPoints(actionCount, 10);
+        currentActionPoint = maxActionPoint;
+        UIManager.UpdateActionPoints(currentActionPoint, maxActionPoint);
         ResetField();
         foreach (Unit unit in playerUnits)
         {
@@ -79,12 +80,17 @@ public class ActionManager : MonoBehaviour
     }
     void Update()
     {
-        if(battleSystemManager.CurrentState != BattleState.THINKING)
+        if(BattleSystemManager.Instance.CurrentState != BattleState.THINKING)
         {
             return;
         }
         SelectUnit();
         SelectAction();
+
+        if (isAttackMode && currentAttackIndicator != null && !currentAttackIndicator.IsLocked)
+        {
+            UpdateAttackDirection();
+        }
     }
 
     private void SelectUnit()
@@ -95,7 +101,7 @@ public class ActionManager : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, 50, playerUnitLayer))
             {
-                Unit selectedUnit = hit.transform.GetComponent<Unit>();
+                PlayerUnit selectedUnit = hit.transform.GetComponent<PlayerUnit>();
                 if (selectedUnit != null)
                 {
                     currentUnit = selectedUnit;
@@ -107,6 +113,8 @@ public class ActionManager : MonoBehaviour
     }
 
     // 행동 선택: m키로 이동 모드 진입/종료, 이동 타일 선택
+    // w키로 대기 선택
+    // a키로 공격 모드 진입/종료, 공격 범위 선택
     private void SelectAction()
     {
         if(currentUnit == null)
@@ -115,7 +123,7 @@ public class ActionManager : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.M))
         {
-            if (!isMoveMode && actionCount > 0)
+            if (!isMoveMode && currentActionPoint > 0)
             {
                 EnterMoveMode();
             }
@@ -124,10 +132,26 @@ public class ActionManager : MonoBehaviour
                 ExitMoveMode();
             }
         }
+        if(Input.GetKeyDown(KeyCode.A))
+        {
+            if(!isAttackMode && currentActionPoint > 0)
+            { 
+                EnterAttackMode();
+            }
+            else
+            {
+                ExitAttackMode();
+            }
+        }
 
-        if(isMoveMode && Input.GetMouseButton(0))
+        if (isMoveMode && Input.GetMouseButton(0))
         {
             SelectMoveTile();
+        }
+
+        if (isAttackMode && Input.GetMouseButtonDown(0))
+        {
+            ConfirmAttackDirection();
         }
 
         if (Input.GetKeyDown(KeyCode.W))
@@ -159,6 +183,46 @@ public class ActionManager : MonoBehaviour
         }
     }
 
+    // Attack Mode: a키 누를 시 공격 방향 지정 인디케이터 표시
+    public void EnterAttackMode()
+    {
+        UIManager.HideUnitActionOption();
+        Debug.Log("Enter Attack Mode");
+        currentAttackIndicator = currentUnit.ShowAttackRangeIndicator();
+        isAttackMode = true;
+        Debug.Log(currentAttackIndicator);
+    }
+
+    // 공격 방향 업데이트 (마우스 위치로 부채꼴 회전)
+    private void UpdateAttackDirection()
+    {
+        // 마우스 위치를 월드 좌표로 변환
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Plane plane = new Plane(Vector3.back, currentUnit.transform.position);
+        float distance;
+
+        if (plane.Raycast(ray, out distance))
+        {
+            Vector3 worldPoint = ray.GetPoint(distance);
+            currentAttackIndicator.UpdateDirection(worldPoint);
+        }
+    }
+    // 공격 방향 확정 (마우스 클릭 시)
+    private void ConfirmAttackDirection()
+    {
+        if (currentAttackIndicator == null)
+            return;
+        if(currentAttackIndicator.IsLocked)
+            return;
+
+        currentAttackIndicator.Lock();
+        currentUnit.EnQueueAction(ActionType.ATTACK);
+        currentActionPoint--;
+        UIManager.UpdateActionPoints(currentActionPoint, maxActionPoint);
+        ExitAttackMode();
+    }
+
+    // Move Mode
     // 하이라이트된 타일 중 하나 선택 시 이동 액션 큐에 추가
     private void SelectMoveTile()
     {
@@ -174,8 +238,8 @@ public class ActionManager : MonoBehaviour
                 Debug.Log("Selected move tile");
                 ActionType movingDirection = GetMoveActionType(currentTile, tile);
                 currentUnit.EnQueueAction(movingDirection);
-                actionCount--;
-                UIManager.UpdateActionPoints(actionCount, 10);
+                currentActionPoint--;
+                UIManager.UpdateActionPoints(currentActionPoint, maxActionPoint);
 
                 CreateMoveIcon(movingDirection, currentTile);
 
@@ -234,6 +298,16 @@ public class ActionManager : MonoBehaviour
         isMoveMode = false;
         ClearHighlightedTiles();
         currentUnit = null;
+    }
+    private void ExitAttackMode()
+    {
+        if(currentAttackIndicator != null && !currentAttackIndicator.IsLocked)
+        {
+            Destroy(currentAttackIndicator.gameObject);
+        }
+        isAttackMode = false;
+        currentUnit = null;
+        currentAttackIndicator = null;
     }
 
     // 현재 타일 기준으로 상하좌우 인접 타일 하이라이트
