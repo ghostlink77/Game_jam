@@ -98,11 +98,13 @@ public class TurnProgress : MonoBehaviour
         List<EnemyUnit> aliveEnemies = enemyUnits.FindAll(e => e.IsAlive);
         List<PlayerUnit> alivePlayers = playerUnits.FindAll(p => p.IsAlive);
 
-        foreach(EnemyUnit enemy in aliveEnemies)
+        while(currentEnemysActionPoint > 0)
         {
-            // Å¸°Ù ÇÃ·¹ÀÌ¾î À¯´Ö ¼±Á¤ (50% È®·ü·Î °¡Àå °¡±î¿î À¯´Ö, 50% È®·ü·Î ·£´ý À¯´Ö)
+            EnemyUnit enemy = aliveEnemies[Random.Range(0, aliveEnemies.Count)];
+
+            // Å¸°Ù ÇÃ·¹ÀÌ¾î À¯´Ö ¼±Á¤ (70% È®·ü·Î °¡Àå °¡±î¿î À¯´Ö, 30% È®·ü·Î ·£´ý À¯´Ö)
             PlayerUnit targetPlayer = null;
-            if (Random.Range(0f, 1f) < 0.5f)
+            if (Random.Range(0f, 1f) < 0.7f)
             {
                 targetPlayer = FindClosestPlayerUnit(alivePlayers, enemy);
             }
@@ -113,7 +115,7 @@ public class TurnProgress : MonoBehaviour
             enemy.SetTargetPlayerUnit(targetPlayer);
 
             // ¾×¼Ç Æ÷ÀÎÆ® ÇÒ´ç
-            int maxPointsForThisEnemy = Mathf.Min(5, currentEnemysActionPoint);
+            int maxPointsForThisEnemy = Mathf.Min(4, currentEnemysActionPoint);
             int points = Random.Range(0, maxPointsForThisEnemy + 1);
 
             enemy.DecideAction(points);
@@ -121,7 +123,7 @@ public class TurnProgress : MonoBehaviour
             currentEnemysActionPoint -= points;
             if (currentEnemysActionPoint <= 0) break;
 
-            ShuffleEnemyList(aliveEnemies);
+            //ShuffleEnemyList(aliveEnemies);
         }
     }
 

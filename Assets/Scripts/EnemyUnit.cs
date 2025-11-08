@@ -96,6 +96,7 @@ public class EnemyUnit : Unit
                     break;
             }
         } while (!isValidMove(GetExpectedLoc(transform.position), nextMove));
+        EnQueueAction(nextMove);
     }
     private bool isValidMove(Vector3 expectedLoc, ActionType moveAction)
     {

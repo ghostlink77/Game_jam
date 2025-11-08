@@ -41,7 +41,7 @@ public class UIManager : MonoBehaviour
 
     public void ShowUnitInfo(Unit unit)
     {
-        string timeTableText = "Action Queue:\n";
+        string timeTableText = "HP: "+ unit.Hp.ToString() + "\n" + "Action Queue:\n";
         unitInfoPanel.SetActive(true);
         unitNameText.text = unit.unitName;
         Queue<ActionType> actionQueue = unit.GetActionQueue();
@@ -73,5 +73,20 @@ public class UIManager : MonoBehaviour
     {
         resultText.gameObject.SetActive(true);
         resultText.text = "YOU LOSE..";
+    }
+
+    private void LateUpdate()
+    {
+        if(BattleSystemManager.Instance.CurrentState != BattleState.THINKING) return;
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, 100f, LayerMask.GetMask("PlayerUnit")))
+        {
+            ShowUnitInfo(hit.transform.GetComponent<Unit>());
+        }
+        else
+        {
+            HideUnitInfo();
+        }
     }
 }

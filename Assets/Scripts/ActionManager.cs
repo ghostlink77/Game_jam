@@ -173,6 +173,10 @@ public class ActionManager : MonoBehaviour
     // Move Mode: m키 누를 시 이동 가능한 타일 하이라이트
     public void EnterMoveMode()
     {
+        if(currentActionPoint <= 0)
+        {
+            return;
+        }
         UIManager.HideUnitActionOption();
         Debug.Log("Enter Move Mode");
         isMoveMode = true;
@@ -186,6 +190,10 @@ public class ActionManager : MonoBehaviour
     // Attack Mode: a키 누를 시 공격 방향 지정 인디케이터 표시
     public void EnterAttackMode()
     {
+        if (currentActionPoint <= 0)
+        {
+            return;
+        }
         UIManager.HideUnitActionOption();
         Debug.Log("Enter Attack Mode");
         currentAttackIndicator = currentUnit.ShowAttackRangeIndicator();
